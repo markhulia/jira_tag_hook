@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+import re
+import termcolor
+
+WHITELISTED_REPOS = ['aosp', 'yocto', 'bsp', 'vendor', 'ias-boot-bootloader']
+TAG_PATTERN = r'\[(NO-JIRA)\]|\[([A-z]+-\d+)\]|\[(Jira:No)\]|\[(Jira:([A-z]+-\d+))\]'
+SPECIAL_TAG_PATTERN = r'\[(Jira:No)\]|\[(Jira:([A-z]+-\d+))\]'
+ERROR_MESSAGE = '''\nERROR: No JIRA tags found in commit message. Make sure to include a valid jira tag in square 
+brackets (e.g {}) in commit subject or body. If commit is not linked to any  of the JIRA issues, add {} instead '''
+
+
+def jira_tag(text, pattern):
+    tags = re.findall(pattern, text, re.IGNORECASE)
+    return tags
+
+
+def print_error(msg):
+    print(termcolor.colored('', 'red'))
+    print(termcolor.colored(ERROR_MESSAGE.format(msg[0], msg[1]), 'red'))
+
+
+cmf = sys.argv
+args = subprocess.check_output(['git', 'cat-file', '-p', cmf[12]])
+
+
+# Exception for aosp, bsp and yocto, since sync between Gerrit servers fails
+if cmf[2].split('/')[0] in WHITELISTED_REPOS:
+    sys.exit(0)
+
+# Exception for Krakow JIRA format [Jira:No] [Jira:ABC-123]
+if cmf[2] in SPECIAL_REPOS:
+    if not jira_tag(str(args), SPECIAL_TAG_PATTERN):
+        print_error(['[Jira:ABC-123]', '[Jira:no]'])
+        sys.exit(1)
+
+if not jira_tag(str(args), TAG_PATTERN):
+    print_error(['[ABC-123]', 'NO-JIRA'])
+    sys.exit(1)
