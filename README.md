@@ -1,2 +1,5 @@
-# jira_tag_hook
-Git hook for Gerrit to gate commit which don't contain  Jira tag in square brackets
+# commit_received
+Blocks commits which don't contain a JIRA tag.
+
+###HOW
+Place `commit_received` under `hooks/` directory on Gerrit server
